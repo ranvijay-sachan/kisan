@@ -10,4 +10,4 @@ class KisanappConfig(AppConfig):
 
     def ready(self):
         print('Ranvijay....')
-        parser.start()
+        # parser.start()

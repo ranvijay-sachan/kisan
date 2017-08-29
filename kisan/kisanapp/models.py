@@ -47,6 +47,6 @@ class ClimateHistory(TimeStampedModel):
     temp_type = models.CharField(choices=TEMP_TYPE_CHOICES, max_length=100)
     month_and_type = models.CharField(choices=MONTH_AND_TYPE_CHOICES, max_length=100)
     year = models.IntegerField(_('year'), choices=YEAR_CHOICES)
-    value = models.FloatField()
+    value = models.FloatField(null=True)
     category = models.CharField(max_length=500)
 

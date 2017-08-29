@@ -2,12 +2,19 @@ import requests
 import csv
 import re
 from lxml import html
-from kisanapp.models import ClimateHistory
+
+from models import ClimateHistory
 
 
 def download(url):
     r = requests.get(url)
     return r.content
+
+
+def filter_columns(row, col):
+    if col is None:
+        return row
+    return {k: row[k] for k in row if k in col}
 
 
 def get_downloaded_data(url):
@@ -31,13 +38,24 @@ def get_downloaded_data(url):
 
 
 def parse(url):
+    col = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT',
+           'NOV', 'DEC', 'WIN', 'SPR', 'SUM', 'AUT', 'ANN']
     url_data = skip_blank(download(url))
     data = re.sub(' +', ' ', url_data).strip()
     reader = csv.DictReader(data.splitlines(), delimiter=' ')
-    l = []
     for row in reader:
-        l.append(row)
-    return l
+        year = row.pop('Year', None)
+        print row
+        row = filter_columns(row, col)
+        for month in row:
+            c = ClimateHistory()
+            c.year = year
+            c.month_and_type = month
+            c.value = row[month]
+            c.region = 'UK'
+            c.temp_type = 'Tmax'
+            c.category = "test"
+            yield c
 
 
 def skip_blank(data):
@@ -46,21 +64,18 @@ def skip_blank(data):
 
 
 def start():
-    base_url = 'http://www.metoffice.gov.uk/climate/uk/summaries/datasets#Yearorder'
-    data = get_downloaded_data(base_url)
-    for d in data:
-        parse_data = parse(d['url'])
-        for pr in parse_data:
-            if not ClimateHistory.objects.filter(year=int(pr['Year']), temp_type = d['temp_type'],
-                                                  region=d['Region']).exists():
-                ClimateHistory.objects.create(thread_id=thread, user_id=for_user.pk)
+    for p in parse('http://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Tmax/date/UK.txt'):
+        p.save()
+        yield p
+    # base_url = 'http://www.metoffice.gov.uk/climate/uk/summaries/datasets#Yearorder'
+    # data = get_downloaded_data(base_url)
+    # for d in data:
+    #     parse_data = parse(d['url'])
 
-        # obj = ClimateHistory(region='Beatles Blog', temp_type=d['temp_type'],
-        #                      month_and_type='', year='', value='', category=d['category'] )
-        # obj.save()
+# if __name__ == '__main__':
+#     start()
 
-
-if __name__ == '__main__':
-    # start()
-    print parse('http://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Tmax/date/UK.txt')
+    # for p in parse('http://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Tmax/date/UK.txt'):
+    #     # p.save()
+    #     print p
 
